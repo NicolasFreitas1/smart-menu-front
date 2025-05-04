@@ -16,7 +16,7 @@ export function AdminLayout() {
     }
 
     if (!user?.isAdmin) {
-      navigate("/gyms", { replace: true });
+      navigate("/user", { replace: true });
     }
 
     const interceptorId = api.interceptors.response.use(
