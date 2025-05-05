@@ -1,12 +1,5 @@
+import { User } from "@/domain/user";
 import React, { createContext, useState, useContext, ReactNode } from "react";
-
-export interface User {
-  id: string;
-  name: string;
-  email: string;
-  isAdmin: boolean;
-  createdAt: string;
-}
 
 interface AuthContextData {
   isAuthenticated: boolean;

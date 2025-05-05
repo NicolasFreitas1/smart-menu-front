@@ -5,6 +5,12 @@ import { AuthLayout } from "./pages/_layout/auth";
 import { SignIn } from "./pages/auth/sign-in";
 import { SignUp } from "./pages/auth/sign-up";
 import { NotFound } from "./pages/not-found";
+import { PublicLayout } from "./pages/_layout/public";
+import { Home } from "./pages/app/home/home";
+import { Menu } from "./pages/app/menu/menu";
+import { Cart } from "./pages/app/cart/cart";
+import { SurpriseMe } from "./pages/app/surprise-me/surprise-me";
+import { Assistant } from "./pages/app/assistant/assistant";
 
 export const router = createBrowserRouter([
   {
@@ -13,9 +19,31 @@ export const router = createBrowserRouter([
     errorElement: <Error />,
   },
   {
-    path: "/teste",
-    // element: <AppLayout />,
+    path: "/",
+    element: <PublicLayout />,
     errorElement: <Error />,
+    children: [
+      {
+        path: "/:restaurantId/home",
+        element: <Home />,
+      },
+      {
+        path: "/:restaurantId/menu",
+        element: <Menu />,
+      },
+      {
+        path: "/:restaurantId/cart",
+        element: <Cart />,
+      },
+      {
+        path: "/:restaurantId/surprise-me",
+        element: <SurpriseMe />,
+      },
+      {
+        path: "/:restaurantId/assistant",
+        element: <Assistant />,
+      },
+    ],
   },
   {
     path: "/",

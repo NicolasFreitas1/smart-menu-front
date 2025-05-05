@@ -1,4 +1,4 @@
-import { User } from "@/context/AuthContext";
+import { User } from "@/domain/user";
 import { api } from "../lib/axios";
 
 export interface SignInBody {
