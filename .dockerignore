@@ -1,0 +1,47 @@
+# Ignorar node_modules local, será instalado dentro do container
+node_modules
+npm-debug.log
+yarn-error.log
+pnpm-debug.log
+
+# Ignorar arquivos de log
+*.log
+
+# Ignorar arquivos de ambiente sensíveis (certifique-se de usar COPY explícito no Dockerfile para os que são necessários)
+.env.local
+.env.development
+.env.test
+.env.production
+
+# Ignorar diretórios e arquivos desnecessários
+.git
+.gitignore
+.idea
+.vscode
+.DS_Store
+*.swp
+*.swo
+*.bak
+*.tmp
+
+# Ignorar pastas relacionadas a testes e cobertura de código
+coverage
+test-results
+reports
+
+# Ignorar arquivos gerados durante o build local
+dist
+build
+
+# Ignorar caches do sistema
+.cache
+
+Dockerfile
+.dockerignore
+node_modules
+npm-debug.log
+*.md
+docker
+dist
+.git
+.env

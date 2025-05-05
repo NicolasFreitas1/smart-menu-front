@@ -1,0 +1,10 @@
+services:
+  smart-menu-web:
+    image: smart-menu-web
+    container_name: smart-menu-web
+    restart: 'always'
+    ports:
+      - '3000:3000'
+    build:
+      context: ../../
+      dockerfile: docker/development/Dockerfile

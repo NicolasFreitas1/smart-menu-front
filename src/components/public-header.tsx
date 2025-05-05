@@ -9,7 +9,7 @@ export function PublicHeader() {
   if (!restaurantId) return null;
 
   return (
-    <nav className="flex justify-between border-b border-solid px-8 py-4">
+    <nav className="hidden md:flex justify-between border-b border-solid px-8 py-4">
       {/* ESQUERDA */}
       <div className="flex items-center gap-10">
         <Link
