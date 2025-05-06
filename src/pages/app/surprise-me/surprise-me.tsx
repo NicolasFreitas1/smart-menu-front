@@ -1,53 +1,25 @@
+import { getDishes } from "@/api/get-dishes";
 import { DishItem } from "@/components/dish-item";
 import { Button } from "@/components/ui/button";
+import { Dish } from "@/domain/dish";
 import { useEffect, useState } from "react";
-
-const dishes = [
-  {
-    id: "1",
-    name: "Lasanha",
-    description: "Deliciosa lasanha caseira com molho de tomate e queijo.",
-    price: 25.0,
-    category: "Massas",
-  },
-  {
-    id: "2",
-    name: "Picanha Grelhada",
-    description: "Picanha suculenta grelhada no ponto perfeito.",
-    price: 45.0,
-    category: "Carnes",
-  },
-  {
-    id: "3",
-    name: "Salada Caesar",
-    description: "Clássica salada Caesar com frango e parmesão.",
-    price: 18.0,
-    category: "Saladas",
-  },
-  {
-    id: "4",
-    name: "Petit Gateau",
-    description: "Bolo de chocolate com recheio cremoso e sorvete.",
-    price: 22.0,
-    category: "Sobremesas",
-  },
-  {
-    id: "5",
-    name: "Spaghetti à Bolonhesa",
-    description: "Massa com molho de carne moída ao estilo italiano.",
-    price: 23.0,
-    category: "Massas",
-  },
-];
 
 export function SurpriseMe() {
   const [categories, setCategories] = useState<string[]>([]);
   const [selectedCategory, setSelectedCategory] = useState("");
-  const [randomDish, setRandomDish] = useState<any | null>(null);
+  const [randomDish, setRandomDish] = useState<Dish | null>(null);
   const [step, setStep] = useState<1 | 2>(1);
   const [isLoading, setIsLoading] = useState(false);
+  const [dishes, setDishes] = useState<Dish[]>([]);
+
+  async function fetchDishes() {
+    const fetchedDishes = await getDishes();
+
+    setDishes(fetchedDishes);
+  }
 
   useEffect(() => {
+    fetchDishes();
     setCategories(["Massas", "Carnes", "Saladas", "Sobremesas"]);
   }, []);
 
@@ -57,10 +29,10 @@ export function SurpriseMe() {
     setIsLoading(true);
 
     setTimeout(() => {
-      const filtered = dishes.filter(
-        (dish) => dish.category === selectedCategory
-      );
-      const random = filtered[Math.floor(Math.random() * filtered.length)];
+      // const filtered = dishes.filter(
+      //   (dish) => dish.category === selectedCategory
+      // );
+      const random = dishes[Math.floor(Math.random() * dishes.length)];
       setRandomDish(random);
       setStep(2);
       setIsLoading(false);
