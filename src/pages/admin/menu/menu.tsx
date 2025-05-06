@@ -11,7 +11,6 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { AddDishModal } from "../components/AddDishModal";
 
-// Simulação de API
 const mockDishes = [
   {
     id: "1",
@@ -52,7 +51,6 @@ export function MenuPage() {
     price: number;
     categories: string[];
   }) => {
-    // Atualiza categorias caso o usuário tenha adicionado alguma nova
     const novasCategorias = data.categories.filter(
       (cat) => !categories.includes(cat)
     );
@@ -60,7 +58,6 @@ export function MenuPage() {
       setCategories((prev) => [...prev, ...novasCategorias]);
     }
 
-    // Aqui você pode fazer o POST para o backend com os dados do prato
     console.log("Prato criado:", data);
   };
 
