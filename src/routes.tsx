@@ -11,6 +11,10 @@ import { Menu } from "./pages/app/menu/menu";
 import { Cart } from "./pages/app/cart/cart";
 import { SurpriseMe } from "./pages/app/surprise-me/surprise-me";
 import { Assistant } from "./pages/app/assistant/assistant";
+import { AdminLayout } from "./pages/admin/layout/layout";
+import { UsersPage } from "./pages/admin/users/users";
+import { MenuPage } from "./pages/admin/menu/menu";
+import { OrdersPage } from "./pages/admin/orders/orders";
 
 export const router = createBrowserRouter([
   {
@@ -62,5 +66,14 @@ export const router = createBrowserRouter([
   {
     path: "*",
     element: <NotFound />,
+  },
+  {
+    path: "/admin",
+    element: <AdminLayout />,
+    children: [
+      { path: "user", element: <UsersPage /> },
+      { path: "menu", element: <MenuPage /> },
+      { path: "orders", element: <OrdersPage /> },
+    ],
   },
 ]);

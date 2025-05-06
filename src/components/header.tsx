@@ -9,7 +9,7 @@ export function Header() {
       {/* ESQUERDA */}
       <div className="flex items-center gap-10">
         <Link
-          to={"/user"}
+          to={"/admin/user"}
           className={
             pathname === "/user"
               ? "font-bold text-primary"
@@ -19,17 +19,7 @@ export function Header() {
           Usuário
         </Link>
         <Link
-          to={"/restaurant"}
-          className={
-            pathname === "/restaurant"
-              ? "font-bold text-primary"
-              : "text-muted-foreground"
-          }
-        >
-          Restaurante
-        </Link>
-        <Link
-          to={"/menu"}
+          to={"/admin/menu"}
           className={
             pathname === "/menu"
               ? "font-bold text-primary"
@@ -39,7 +29,7 @@ export function Header() {
           Cardápio
         </Link>
         <Link
-          to={"/orders"}
+          to={"/admin/orders"}
           className={
             pathname === "/orders"
               ? "font-bold text-primary"
