@@ -1,30 +1,91 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { DishItem } from "@/components/dish-item";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { CategoryFilter } from "@/components/category-filter";
 import { getRestaurantDishes } from "@/api/get-restaurant-dishes";
 import { Dish } from "@/domain/dish";
 import { useRestaurant } from "@/context/RestaurantContext";
-
-// Categorias disponíveis
-const categories = ["Todos", "Massas", "Carnes", "Saladas", "Sobremesas"];
+import { useSearchParams } from "react-router-dom";
+import { z } from "zod";
+import { DataWithPagination } from "@/domain/interfaces/data-with-pagination";
+import { getCategories } from "@/api/get-categories";
+import { Pagination } from "@/components/pagination";
 
 export function Menu() {
   const { restaurantId } = useRestaurant();
 
-  const [selectedCategory, setSelectedCategory] = useState("Todos");
-  const [dishes, setDishes] = useState<Dish[]>([]);
+  const [dishes, setDishes] = useState<DataWithPagination<Dish> | undefined>(
+    undefined
+  );
+  const [searchParams, setSearchParams] = useSearchParams();
+
+  const pageIndex = z.coerce.number().parse(searchParams.get("page") ?? 1);
+  const perPageIndex = z.coerce
+    .number()
+    .parse(searchParams.get("per_page") ?? 2);
+
+  const categoryFilter = searchParams.get("categoryFilter");
+
+  const [categories, setCategories] = useState<string[]>([]);
+
+  function handlePagination(pageIndex: number) {
+    setSearchParams((state) => {
+      state.set("page", (pageIndex + 1).toString());
+      return state;
+    });
+  }
+
+  function handlePerPagePagination(perPage: number) {
+    setSearchParams((state) => {
+      state.set("per_page", perPage.toString());
+      return state;
+    });
+  }
+
+  function handleCategoryFilter(category: string) {
+    setSearchParams((state) => {
+      if (category) {
+        state.set("categoryFilter", category);
+      } else {
+        state.delete("categoryFilter");
+      }
+
+      state.set("page", "1");
+
+      return state;
+    });
+  }
+
+  const fetchDishes = useCallback(async () => {
+    if (!restaurantId) return;
+
+    const dishes = await getRestaurantDishes({
+      restaurantId,
+      per_page: perPageIndex,
+      page: pageIndex,
+      categoryFilter: categoryFilter ?? undefined,
+    });
+
+    setDishes(dishes);
+  }, [restaurantId, perPageIndex, pageIndex, categoryFilter]);
+
+  const fetchCategories = useCallback(async () => {
+    try {
+      const result = await getCategories();
+      const names = result.map((cat) => cat.name);
+      setCategories(["Todas", ...names]);
+    } catch (error) {
+      console.error("Erro ao buscar categorias:", error);
+    }
+  }, []);
 
   useEffect(() => {
-    async function fetchDishes() {
-      if (!restaurantId) return;
-      const fetchedDishes = await getRestaurantDishes({ restaurantId });
+    fetchCategories();
+  }, [fetchCategories]);
 
-      setDishes(fetchedDishes.data);
-    }
-
+  useEffect(() => {
     fetchDishes();
-  }, [restaurantId]);
+  }, [fetchDishes]);
 
   // Filtro baseado na categoria
   // const filteredDishes =
@@ -44,25 +105,41 @@ export function Menu() {
       {/* Filtro por categoria */}
       <CategoryFilter
         categories={categories}
-        onSelect={setSelectedCategory}
-        selected={selectedCategory}
+        onSelect={(value) =>
+          handleCategoryFilter(value === "Todas" ? "" : value)
+        }
+        selected={categoryFilter ?? "Todas"}
       />
 
       {/* Lista de pratos */}
       <div className="w-full sm:max-w-sm md:max-w-md lg:max-w-lg xl:max-w-xl 2xl:max-w-2xl">
         <ScrollArea className="h-[500px] w-full max-w-3xl">
           <div className="flex flex-col gap-4">
-            {dishes.map((dish) => (
-              <DishItem
-                key={dish.id}
-                id={dish.id}
-                name={dish.name}
-                description={dish.description}
-                price={dish.price}
-              />
-            ))}
+            {dishes &&
+              dishes.data.map((dish) => (
+                <DishItem
+                  key={dish.id}
+                  id={dish.id}
+                  name={dish.name}
+                  description={dish.description}
+                  price={dish.price}
+                />
+              ))}
           </div>
         </ScrollArea>
+
+        {dishes && (
+          <Pagination
+            onPageChange={handlePagination}
+            onPerPageChange={handlePerPagePagination}
+            pageIndex={dishes.actualPage}
+            perPageIndex={dishes.perPage}
+            perPage={dishes.perPage}
+            totalCount={dishes.amount}
+            totalPages={dishes.totalPages}
+            hasPerPage={false}
+          />
+        )}
       </div>
     </div>
   );
