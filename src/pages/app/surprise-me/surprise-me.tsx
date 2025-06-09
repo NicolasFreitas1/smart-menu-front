@@ -1,50 +1,92 @@
-import { getRestaurantDishes } from "@/api/get-restaurant-dishes";
+import { getCategories } from "@/api/get-categories";
+import { getRandomDishFromRestaurant } from "@/api/get-random-dish-from-restaurant";
+import { CategoryFilter } from "@/components/category-filter";
 import { DishItem } from "@/components/dish-item";
 import { Button } from "@/components/ui/button";
 import { useRestaurant } from "@/context/RestaurantContext";
 import { Dish } from "@/domain/dish";
-import { useEffect, useState } from "react";
+import { AxiosError } from "axios";
+import { useCallback, useEffect, useState } from "react";
+import { useSearchParams } from "react-router-dom";
+import { toast } from "sonner";
 
 export function SurpriseMe() {
   const { restaurantId } = useRestaurant();
 
+  const [searchParams, setSearchParams] = useSearchParams();
+
+  const categoryFilter = searchParams.get("categoryFilter");
+
   const [categories, setCategories] = useState<string[]>([]);
-  const [selectedCategory, setSelectedCategory] = useState("");
   const [randomDish, setRandomDish] = useState<Dish | null>(null);
   const [step, setStep] = useState<1 | 2>(1);
   const [isLoading, setIsLoading] = useState(false);
-  const [dishes, setDishes] = useState<Dish[]>([]);
+
+  function handleCategoryFilter(category: string) {
+    setSearchParams((state) => {
+      if (category) {
+        state.set("categoryFilter", category);
+      } else {
+        state.delete("categoryFilter");
+      }
+
+      state.set("page", "1");
+
+      return state;
+    });
+  }
+
+  const fetchCategories = useCallback(async () => {
+    try {
+      const result = await getCategories();
+      const names = result.map((cat) => cat.name);
+      setCategories([...names]);
+    } catch (error) {
+      console.error("Erro ao buscar categorias:", error);
+    }
+  }, []);
 
   useEffect(() => {
-    async function fetchDishes() {
+    fetchCategories();
+  }, [fetchCategories]);
+
+  const handleNextStep = async () => {
+    try {
       if (!restaurantId) return;
 
-      const fetchedDishes = await getRestaurantDishes(restaurantId);
-      setDishes(fetchedDishes);
-    }
+      console.log(categoryFilter);
 
-    fetchDishes();
-    setCategories(["Massas", "Carnes", "Saladas", "Sobremesas"]);
-  }, [restaurantId]);
+      if (!categoryFilter) return;
 
-  const handleNextStep = () => {
-    if (!selectedCategory) return;
+      setIsLoading(true);
 
-    setIsLoading(true);
-
-    setTimeout(() => {
-      // const filtered = dishes.filter(
-      //   (dish) => dish.category === selectedCategory
-      // );
-      const random = dishes[Math.floor(Math.random() * dishes.length)];
-      setRandomDish(random);
+      const random = await getRandomDishFromRestaurant({
+        restaurantId,
+        category: categoryFilter,
+      });
+      setRandomDish(random.dish);
       setStep(2);
       setIsLoading(false);
-    }, 1500);
+    } catch (error) {
+      console.log(error);
+
+      if (error instanceof AxiosError) {
+        if (error.status === 404) {
+          toast.error("Nenhum prato encontrado com a categoria selecionada!");
+        }
+      } else {
+        toast.error("Algo deu errado!");
+      }
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const handleReset = () => {
-    setSelectedCategory("");
+    setSearchParams((state) => {
+      state.delete("categoryFilter");
+      return state;
+    });
     setRandomDish(null);
     setStep(1);
   };
@@ -59,24 +101,18 @@ export function SurpriseMe() {
           </p>
 
           <div className="flex flex-wrap justify-center gap-2">
-            {categories.map((category) => (
-              <button
-                key={category}
-                onClick={() => setSelectedCategory(category)}
-                className={`px-4 py-2 rounded border text-sm font-medium whitespace-nowrap transition ${
-                  selectedCategory === category
-                    ? "bg-green-600 text-white"
-                    : "bg-white text-gray-700 hover:bg-gray-100"
-                }`}
-              >
-                {category}
-              </button>
-            ))}
+            <CategoryFilter
+              categories={categories}
+              onSelect={(value) =>
+                handleCategoryFilter(value === "Todas" ? "" : value)
+              }
+              selected={categoryFilter ?? "Todas"}
+            />
           </div>
 
           <Button
-            onClick={handleNextStep}
-            disabled={!selectedCategory || isLoading}
+            onClick={() => handleNextStep()}
+            disabled={!categoryFilter || isLoading}
             className="bg-green-600 hover:bg-green-700 text-white font-bold"
           >
             {isLoading ? (
