@@ -20,6 +20,7 @@ import { DishCard } from "./components/dish-card";
 import { deleteDish } from "@/api/delete-dish";
 import { toast } from "sonner";
 import { createDish } from "@/api/create-dish";
+import { Separator } from "@/components/ui/separator";
 
 export function MenuPage() {
   const { user } = useAuth();
@@ -131,7 +132,14 @@ export function MenuPage() {
 
   return (
     <div className="p-6 space-y-8">
-      <h1 className="text-2xl font-bold">Cardápio</h1>
+      <div>
+        <h1 className="text-2xl font-bold">Cardápio</h1>
+        <p className="text-muted-foreground">
+          Lista dos pratos cadastrados no sistema.
+        </p>
+      </div>
+
+      <Separator />
 
       <div className="flex items-center gap-4">
         <Select
