@@ -2,25 +2,29 @@ import { useEffect, useState } from "react";
 import { DishItem } from "@/components/dish-item";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { CategoryFilter } from "@/components/category-filter";
-import { getDishes } from "@/api/get-dishes";
+import { getRestaurantDishes } from "@/api/get-restaurant-dishes";
 import { Dish } from "@/domain/dish";
+import { useRestaurant } from "@/context/RestaurantContext";
 
 // Categorias disponíveis
 const categories = ["Todos", "Massas", "Carnes", "Saladas", "Sobremesas"];
 
 export function Menu() {
+  const { restaurantId } = useRestaurant();
+
   const [selectedCategory, setSelectedCategory] = useState("Todos");
   const [dishes, setDishes] = useState<Dish[]>([]);
 
-  async function fetchDishes() {
-    const fetchedDishes = await getDishes();
-
-    setDishes(fetchedDishes);
-  }
-
   useEffect(() => {
+    async function fetchDishes() {
+      if (!restaurantId) return;
+      const fetchedDishes = await getRestaurantDishes({ restaurantId });
+
+      setDishes(fetchedDishes.data);
+    }
+
     fetchDishes();
-  }, []);
+  }, [restaurantId]);
 
   // Filtro baseado na categoria
   // const filteredDishes =

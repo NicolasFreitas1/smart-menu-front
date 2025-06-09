@@ -1,10 +1,13 @@
-import { getDishes } from "@/api/get-dishes";
+import { getRestaurantDishes } from "@/api/get-restaurant-dishes";
 import { DishItem } from "@/components/dish-item";
 import { Button } from "@/components/ui/button";
+import { useRestaurant } from "@/context/RestaurantContext";
 import { Dish } from "@/domain/dish";
 import { useEffect, useState } from "react";
 
 export function SurpriseMe() {
+  const { restaurantId } = useRestaurant();
+
   const [categories, setCategories] = useState<string[]>([]);
   const [selectedCategory, setSelectedCategory] = useState("");
   const [randomDish, setRandomDish] = useState<Dish | null>(null);
@@ -12,16 +15,17 @@ export function SurpriseMe() {
   const [isLoading, setIsLoading] = useState(false);
   const [dishes, setDishes] = useState<Dish[]>([]);
 
-  async function fetchDishes() {
-    const fetchedDishes = await getDishes();
-
-    setDishes(fetchedDishes);
-  }
-
   useEffect(() => {
+    async function fetchDishes() {
+      if (!restaurantId) return;
+
+      const fetchedDishes = await getRestaurantDishes(restaurantId);
+      setDishes(fetchedDishes);
+    }
+
     fetchDishes();
     setCategories(["Massas", "Carnes", "Saladas", "Sobremesas"]);
-  }, []);
+  }, [restaurantId]);
 
   const handleNextStep = () => {
     if (!selectedCategory) return;

@@ -46,7 +46,7 @@ export function UsersPage() {
       <div>
         <h1 className="text-2xl font-bold">Usuários</h1>
         <p className="text-muted-foreground">
-          Lista de usuários cadastrados no sistema.
+          Lista dos usuários cadastrados no sistema.
         </p>
       </div>
 
