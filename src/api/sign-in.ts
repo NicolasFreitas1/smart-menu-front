@@ -17,5 +17,7 @@ export async function signIn({ email, password }: SignInBody) {
     password,
   });
 
+  console.log(data);
+
   return data;
 }

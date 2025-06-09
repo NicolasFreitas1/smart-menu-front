@@ -4,4 +4,5 @@ export interface Dish {
     description: string
     price: number
     restaurantId: string
+    categories?: Array<string>
 }

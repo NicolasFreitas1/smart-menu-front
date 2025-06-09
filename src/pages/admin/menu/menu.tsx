@@ -1,6 +1,7 @@
-import { useState } from "react";
+import { getCategories } from "@/api/get-categories"; // ✅ Certifique-se de importar
+import { getRestaurantDishes } from "@/api/get-restaurant-dishes";
+import { Pagination } from "@/components/pagination";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
 import {
   Select,
   SelectContent,
@@ -8,83 +9,153 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Badge } from "@/components/ui/badge";
-import { AddDishModal } from "../components/AddDishModal";
-
-const mockDishes = [
-  {
-    id: "1",
-    name: "Lasanha",
-    description: "Deliciosa lasanha com queijo e molho.",
-    price: 29.9,
-    categories: ["prato principal"],
-  },
-  {
-    id: "2",
-    name: "Refrigerante",
-    description: "Coca-Cola gelada.",
-    price: 5.0,
-    categories: ["bebida"],
-  },
-  {
-    id: "3",
-    name: "Petit Gâteau",
-    description: "Bolo com sorvete de creme.",
-    price: 18.5,
-    categories: ["sobremesa"],
-  },
-];
+import { useAuth } from "@/context/AuthContext";
+import { Dish } from "@/domain/dish";
+import { DataWithPagination } from "@/domain/interfaces/data-with-pagination";
+import { useCallback, useEffect, useState } from "react";
+import { useSearchParams } from "react-router-dom";
+import { z } from "zod";
+import { AddDishModal } from "../components/add-dish-modal";
+import { DishCard } from "./components/dish-card";
+import { deleteDish } from "@/api/delete-dish";
+import { toast } from "sonner";
+import { createDish } from "@/api/create-dish";
+import { Separator } from "@/components/ui/separator";
 
 export function MenuPage() {
-  const [dishes, setDishes] = useState(mockDishes);
-  const [filter, setFilter] = useState<string>("all");
-  const [modalOpen, setModalOpen] = useState(false);
-  const [categories, setCategories] = useState<string[]>([
-    "Massas",
-    "Carnes",
-    "Saladas",
-  ]);
+  const { user } = useAuth();
+  const [searchParams, setSearchParams] = useSearchParams();
 
-  const handleAddDish = (data: {
+  const pageIndex = z.coerce.number().parse(searchParams.get("page") ?? 1);
+  const perPageIndex = z.coerce
+    .number()
+    .parse(searchParams.get("per_page") ?? 6);
+
+  const [dishes, setDishes] = useState<DataWithPagination<Dish> | undefined>(
+    undefined
+  );
+
+  const categoryFilter = searchParams.get("categoryFilter");
+
+  const [modalOpen, setModalOpen] = useState(false);
+  const [categories, setCategories] = useState<string[]>([]);
+
+  function handlePagination(pageIndex: number) {
+    setSearchParams((state) => {
+      state.set("page", (pageIndex + 1).toString());
+      return state;
+    });
+  }
+
+  function handlePerPagePagination(perPage: number) {
+    setSearchParams((state) => {
+      state.set("per_page", perPage.toString());
+      return state;
+    });
+  }
+
+  function handleCategoryFilter(category: string) {
+    setSearchParams((state) => {
+      if (category) {
+        state.set("categoryFilter", category);
+      } else {
+        state.delete("categoryFilter");
+      }
+
+      state.set("page", "1");
+
+      return state;
+    });
+  }
+
+  async function handleAddDish(data: {
     name: string;
     description: string;
     price: number;
+    restaurantId: string;
     categories: string[];
-  }) => {
-    const novasCategorias = data.categories.filter(
-      (cat) => !categories.includes(cat)
-    );
-    if (novasCategorias.length > 0) {
-      setCategories((prev) => [...prev, ...novasCategorias]);
+  }) {
+    await createDish(data);
+    await fetchDishes();
+    await fetchCategories();
+  }
+
+  async function handleRemove(id: string) {
+    try {
+      await deleteDish({ dishId: id });
+      await fetchDishes();
+      setDishes((prev) =>
+        prev
+          ? {
+              ...prev,
+              data: prev.data.filter((dish) => dish.id !== id),
+            }
+          : prev
+      );
+      toast.success("Prato removido com sucesso");
+    } catch (error) {
+      console.error("Erro ao remover prato:", error);
+      toast.error("Erro ao remover prato");
     }
+  }
 
-    console.log("Prato criado:", data);
-  };
+  const fetchDishes = useCallback(async () => {
+    if (!user) return;
 
-  const filteredDishes =
-    filter === "all"
-      ? dishes
-      : dishes.filter((dish) => dish.categories.includes(filter));
+    const dishes = await getRestaurantDishes({
+      restaurantId: user.restaurantId,
+      per_page: perPageIndex,
+      page: pageIndex,
+      categoryFilter: categoryFilter ?? undefined,
+    });
 
-  const handleRemove = (id: string) => {
-    setDishes((prev) => prev.filter((dish) => dish.id !== id));
-  };
+    setDishes(dishes);
+  }, [user, perPageIndex, pageIndex, categoryFilter]);
+
+  const fetchCategories = useCallback(async () => {
+    try {
+      const result = await getCategories();
+      const names = result.map((cat) => cat.name);
+      setCategories(["todas", ...names]);
+    } catch (error) {
+      console.error("Erro ao buscar categorias:", error);
+    }
+  }, []);
+
+  useEffect(() => {
+    fetchCategories();
+  }, [fetchCategories]);
+
+  useEffect(() => {
+    fetchDishes();
+  }, [fetchDishes]);
 
   return (
-    <div className="p-8 space-y-8">
-      <h1 className="text-2xl font-bold">Cardápio</h1>
+    <div className="p-6 space-y-8">
+      <div>
+        <h1 className="text-2xl font-bold">Cardápio</h1>
+        <p className="text-muted-foreground">
+          Lista dos pratos cadastrados no sistema.
+        </p>
+      </div>
+
+      <Separator />
 
       <div className="flex items-center gap-4">
-        <Select onValueChange={(value) => setFilter(value)}>
+        <Select
+          onValueChange={(value) =>
+            handleCategoryFilter(value === "todas" ? "" : value)
+          }
+        >
           <SelectTrigger className="w-[180px]">
             <SelectValue placeholder="Filtrar por categoria" />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="all">Todos</SelectItem>
-            <SelectItem value="bebida">Bebidas</SelectItem>
-            <SelectItem value="entrada">Entradas</SelectItem>
-            <SelectItem value="prato principal">Prato Principal</SelectItem>
-            <SelectItem value="sobremesa">Sobremesas</SelectItem>
+            {categories.map((category) => (
+              <SelectItem key={category} value={category}>
+                {category.charAt(0).toUpperCase() + category.slice(1)}
+              </SelectItem>
+            ))}
           </SelectContent>
         </Select>
 
@@ -92,38 +163,33 @@ export function MenuPage() {
         <AddDishModal
           open={modalOpen}
           onOpenChange={setModalOpen}
-          existingCategories={categories}
+          existingCategories={categories.filter((c) => c !== "todas")}
           onSubmit={handleAddDish}
         />
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-        {filteredDishes.map((dish) => (
-          <Card key={dish.id}>
-            <CardContent className="p-4 space-y-2">
-              <div className="flex justify-between items-center">
-                <h2 className="font-semibold text-lg">{dish.name}</h2>
-                <Button
-                  size="sm"
-                  variant="destructive"
-                  onClick={() => handleRemove(dish.id)}
-                >
-                  Remover
-                </Button>
-              </div>
-              <p className="text-muted-foreground text-sm">
-                {dish.description}
-              </p>
-              <p className="text-sm font-medium">R$ {dish.price.toFixed(2)}</p>
-              <div className="flex gap-2 flex-wrap">
-                {dish.categories.map((cat) => (
-                  <Badge key={cat}>{cat}</Badge>
-                ))}
-              </div>
-            </CardContent>
-          </Card>
-        ))}
-      </div>
+      {dishes && dishes.data.length > 0 ? (
+        <div className="space-y-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {dishes.data.map((dish) => (
+              <DishCard dish={dish} key={dish.id} onRemove={handleRemove} />
+            ))}
+          </div>
+
+          <Pagination
+            onPageChange={handlePagination}
+            onPerPageChange={handlePerPagePagination}
+            pageIndex={dishes.actualPage}
+            perPageIndex={dishes.perPage}
+            perPage={dishes.perPage}
+            totalCount={dishes.amount}
+            totalPages={dishes.totalPages}
+            hasPerPage={false}
+          />
+        </div>
+      ) : (
+        <p>Nenhum prato cadastrado</p>
+      )}
     </div>
   );
 }

@@ -1,5 +1,6 @@
 import { Link, useLocation } from "react-router-dom";
 import { ModeToggle } from "./theme/mode-toggle";
+import { AccountMenu } from "./account-menu";
 
 export function Header() {
   const { pathname } = useLocation();
@@ -9,9 +10,9 @@ export function Header() {
       {/* ESQUERDA */}
       <div className="flex items-center gap-10">
         <Link
-          to={"/admin/user"}
+          to={"/admin/users"}
           className={
-            pathname === "/user"
+            pathname === "/admin/users"
               ? "font-bold text-primary"
               : "text-muted-foreground"
           }
@@ -21,7 +22,7 @@ export function Header() {
         <Link
           to={"/admin/menu"}
           className={
-            pathname === "/menu"
+            pathname === "/admin/menu"
               ? "font-bold text-primary"
               : "text-muted-foreground"
           }
@@ -31,7 +32,7 @@ export function Header() {
         <Link
           to={"/admin/orders"}
           className={
-            pathname === "/orders"
+            pathname === "/admin/orders"
               ? "font-bold text-primary"
               : "text-muted-foreground"
           }
@@ -41,7 +42,7 @@ export function Header() {
       </div>
       {/* DIREITA */}
       <div className="flex items-center gap-2 justify-center w-max-[250px] p-1 ">
-        {/* <AccountMenu /> */}
+        <AccountMenu />
         <ModeToggle />
       </div>
     </nav>
