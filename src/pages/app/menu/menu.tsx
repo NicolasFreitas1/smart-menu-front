@@ -9,7 +9,6 @@ import { useSearchParams } from "react-router-dom";
 import { z } from "zod";
 import { DataWithPagination } from "@/domain/interfaces/data-with-pagination";
 import { getCategories } from "@/api/get-categories";
-import { Pagination } from "@/components/pagination";
 
 export function Menu() {
   const { restaurantId } = useRestaurant();
@@ -22,25 +21,11 @@ export function Menu() {
   const pageIndex = z.coerce.number().parse(searchParams.get("page") ?? 1);
   const perPageIndex = z.coerce
     .number()
-    .parse(searchParams.get("per_page") ?? 2);
+    .parse(searchParams.get("per_page") ?? 9999);
 
   const categoryFilter = searchParams.get("categoryFilter");
 
   const [categories, setCategories] = useState<string[]>([]);
-
-  function handlePagination(pageIndex: number) {
-    setSearchParams((state) => {
-      state.set("page", (pageIndex + 1).toString());
-      return state;
-    });
-  }
-
-  function handlePerPagePagination(perPage: number) {
-    setSearchParams((state) => {
-      state.set("per_page", perPage.toString());
-      return state;
-    });
-  }
 
   function handleCategoryFilter(category: string) {
     setSearchParams((state) => {
@@ -127,19 +112,6 @@ export function Menu() {
               ))}
           </div>
         </ScrollArea>
-
-        {dishes && (
-          <Pagination
-            onPageChange={handlePagination}
-            onPerPageChange={handlePerPagePagination}
-            pageIndex={dishes.actualPage}
-            perPageIndex={dishes.perPage}
-            perPage={dishes.perPage}
-            totalCount={dishes.amount}
-            totalPages={dishes.totalPages}
-            hasPerPage={false}
-          />
-        )}
       </div>
     </div>
   );
