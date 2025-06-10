@@ -1,6 +1,8 @@
+import { generateAISuggestion } from "@/api/generate-ai-suggestion";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { useRestaurant } from "@/context/RestaurantContext";
 import { Send } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 
@@ -19,6 +21,8 @@ const questions = [
 ];
 
 export function Assistant() {
+  const { restaurantId } = useRestaurant();
+
   const [messages, setMessages] = useState(initialMessages);
   const [input, setInput] = useState("");
   const [step, setStep] = useState(0);
@@ -31,34 +35,55 @@ export function Assistant() {
     }
   }, [messages, isLoading]);
 
-  const handleSend = () => {
+  const handleSend = async () => {
     if (!input.trim()) return;
+    if (!restaurantId) return;
 
     const userMessage = { role: "user", content: input.trim() };
     const updatedMessages = [...messages, userMessage];
+
     setMessages(updatedMessages);
     setInput("");
     setIsLoading(true);
 
-    setTimeout(() => {
+    try {
       if (step < questions.length) {
-        setMessages((prev) => [
-          ...prev,
-          { role: "assistant", content: questions[step] },
-        ]);
-        setStep(step + 1);
+        setTimeout(() => {
+          setMessages((prev) => [
+            ...prev,
+            { role: "assistant", content: questions[step] },
+          ]);
+          setStep((prevStep) => prevStep + 1);
+          setIsLoading(false);
+        }, 800);
       } else {
+        const { text, dish } = await generateAISuggestion({
+          restaurantId, // troque conforme necessário
+          messages: updatedMessages,
+        });
+
+        let finalMessage = text;
+        if (dish) {
+          finalMessage += `\n\n🍽️ *${dish.name}*\n${dish.description}`;
+        }
+
         setMessages((prev) => [
           ...prev,
-          {
-            role: "assistant",
-            content:
-              "Com base nas suas respostas, eu recomendaria um delicioso *Spaghetti à Bolonhesa*! 🍝",
-          },
+          { role: "assistant", content: finalMessage },
         ]);
+        setIsLoading(false);
       }
+    } catch (error) {
+      console.error("Erro ao buscar sugestão da IA:", error);
+      setMessages((prev) => [
+        ...prev,
+        {
+          role: "assistant",
+          content: "Ocorreu um erro ao buscar a sugestão. Tente novamente.",
+        },
+      ]);
       setIsLoading(false);
-    }, 800);
+    }
   };
 
   return (
