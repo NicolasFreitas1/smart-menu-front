@@ -21,6 +21,7 @@ import { Input } from "@/components/ui/input";
 import MultipleSelector, { Option } from "@/components/ui/multiple-selector";
 import { Textarea } from "@/components/ui/textarea";
 import { useAuth } from "@/context/AuthContext";
+import { Dish } from "@/domain/dish";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
@@ -53,6 +54,8 @@ interface AddDishModalProps {
     restaurantId: string;
     categories: string[];
   }) => Promise<void>;
+  isEditing?: boolean;
+  editingDish?: Dish | null;
 }
 
 export function AddDishModal({
@@ -60,6 +63,8 @@ export function AddDishModal({
   onOpenChange,
   existingCategories,
   onSubmit: addDish,
+  isEditing = false,
+  editingDish = null,
 }: AddDishModalProps) {
   const { user } = useAuth();
 
@@ -75,6 +80,39 @@ export function AddDishModal({
     },
   });
 
+  useEffect(() => {
+    if (isEditing && editingDish) {
+      const categoriesOptions =
+        editingDish.categories?.map((cat) => ({ label: cat, value: cat })) ||
+        [];
+
+      form.reset({
+        name: editingDish.name,
+        description: editingDish.description,
+        price: editingDish.price,
+        categories: categoriesOptions,
+      });
+    } else {
+      form.reset({
+        name: "",
+        description: "",
+        price: 0,
+        categories: [],
+      });
+    }
+  }, [isEditing, editingDish, form]);
+
+  useEffect(() => {
+    if (!open) {
+      form.reset({
+        name: "",
+        description: "",
+        price: 0,
+        categories: [],
+      });
+    }
+  }, [open, form]);
+
   const onSubmit = async (data: FormData) => {
     try {
       if (!user) return;
@@ -89,11 +127,19 @@ export function AddDishModal({
 
       await addDish(payload);
 
-      toast.success("Prato criado com sucesso!");
+      toast.success(
+        isEditing
+          ? "Prato atualizado com sucesso!"
+          : "Prato criado com sucesso!"
+      );
       onOpenChange(false);
     } catch (err) {
       console.log(err);
-      toast.error("Ops, um erro aconteceu ao criar o prato!");
+      toast.error(
+        `Ops, um erro aconteceu ao ${
+          isEditing ? "atualizar" : "criar"
+        } o prato!`
+      );
     }
   };
 
@@ -105,7 +151,6 @@ export function AddDishModal({
           value: category,
         };
       });
-
       setOptions(formattedOptions);
     }
 
@@ -114,17 +159,20 @@ export function AddDishModal({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent>
+      <DialogContent className="sm:max-w-[425px]">
         <DialogHeader>
-          <DialogTitle>Adicionar novo prato</DialogTitle>
+          <DialogTitle>
+            {isEditing ? "Editar Prato" : "Adicionar Novo Prato"}
+          </DialogTitle>
           <DialogDescription>
-            Cadastre um novo prato no cardápio
+            {isEditing
+              ? "Faça as alterações necessárias no prato abaixo."
+              : "Preencha as informações do novo prato."}
           </DialogDescription>
         </DialogHeader>
-
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-            <div className="space-y-2 w-full">
+            <div className="grid gap-4 py-4">
               <FormField
                 control={form.control}
                 name="name"
@@ -132,7 +180,10 @@ export function AddDishModal({
                   <FormItem>
                     <FormLabel>Nome</FormLabel>
                     <FormControl>
-                      <Input placeholder="Digite o nome..." {...field} />
+                      <Input
+                        placeholder="Digite o nome do prato..."
+                        {...field}
+                      />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -146,7 +197,8 @@ export function AddDishModal({
                     <FormLabel>Descrição</FormLabel>
                     <FormControl>
                       <Textarea
-                        placeholder="Digite a descrição..."
+                        placeholder="Digite a descrição do prato..."
+                        className="resize-none"
                         {...field}
                       />
                     </FormControl>
@@ -171,7 +223,6 @@ export function AddDishModal({
                         disabled={field.disabled}
                       />
                     </FormControl>
-
                     <FormMessage />
                   </FormItem>
                 )}
@@ -179,25 +230,28 @@ export function AddDishModal({
               <FormField
                 control={form.control}
                 name="categories"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Categorias</FormLabel>
-                    <FormControl>
-                      <MultipleSelector
-                        {...field}
-                        defaultOptions={options}
-                        placeholder="Selecione as categorias..."
-                        creatable
-                        emptyIndicator={
-                          <p className="text-center text-lg leading-10 text-gray-600 dark:text-gray-400">
-                            Nenhuma categoria encontrada.
-                          </p>
-                        }
-                      />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
+                render={({ field }) => {
+                  return (
+                    <FormItem>
+                      <FormLabel>Categorias</FormLabel>
+                      <FormControl>
+                        <MultipleSelector
+                          value={field.value}
+                          onChange={field.onChange}
+                          options={options}
+                          placeholder="Selecione as categorias..."
+                          creatable
+                          emptyIndicator={
+                            <p className="text-center text-lg leading-10 text-gray-600 dark:text-gray-400">
+                              Nenhuma categoria encontrada.
+                            </p>
+                          }
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  );
+                }}
               ></FormField>
             </div>
             <DialogFooter>
@@ -206,7 +260,9 @@ export function AddDishModal({
                   Cancelar
                 </Button>
               </DialogClose>
-              <Button type="submit">Adicionar</Button>
+              <Button type="submit">
+                {isEditing ? "Atualizar" : "Adicionar"}
+              </Button>
             </DialogFooter>
           </form>
         </Form>

@@ -1,5 +1,6 @@
 import { getCategories } from "@/api/get-categories"; // ✅ Certifique-se de importar
 import { getRestaurantDishes } from "@/api/get-restaurant-dishes";
+import { updateDish } from "@/api/update-dish";
 import { Pagination } from "@/components/pagination";
 import { Button } from "@/components/ui/button";
 import {
@@ -38,6 +39,8 @@ export function MenuPage() {
   const categoryFilter = searchParams.get("categoryFilter");
 
   const [modalOpen, setModalOpen] = useState(false);
+  const [editModalOpen, setEditModalOpen] = useState(false);
+  const [editingDish, setEditingDish] = useState<Dish | null>(null);
   const [categories, setCategories] = useState<string[]>([]);
 
   function handlePagination(pageIndex: number) {
@@ -78,6 +81,33 @@ export function MenuPage() {
     await createDish(data);
     await fetchDishes();
     await fetchCategories();
+  }
+
+  async function handleEditDish(data: {
+    name: string;
+    description: string;
+    price: number;
+    restaurantId: string;
+    categories: string[];
+  }) {
+    if (!editingDish) return;
+    
+    try {
+      await updateDish({ dishId: editingDish.id, ...data });
+      await fetchDishes();
+      await fetchCategories();
+      setEditModalOpen(false);
+      setEditingDish(null);
+      toast.success("Prato atualizado com sucesso!");
+    } catch (error) {
+      console.error("Erro ao atualizar prato:", error);
+      toast.error("Erro ao atualizar prato");
+    }
+  }
+
+  function handleEdit(dish: Dish) {
+    setEditingDish(dish);
+    setEditModalOpen(true);
   }
 
   async function handleRemove(id: string) {
@@ -172,7 +202,12 @@ export function MenuPage() {
         <div className="space-y-6">
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             {dishes.data.map((dish) => (
-              <DishCard dish={dish} key={dish.id} onRemove={handleRemove} />
+              <DishCard 
+                dish={dish} 
+                key={dish.id} 
+                onRemove={handleRemove}
+                onEdit={handleEdit}
+              />
             ))}
           </div>
 
@@ -190,6 +225,15 @@ export function MenuPage() {
       ) : (
         <p>Nenhum prato cadastrado</p>
       )}
+
+      <AddDishModal
+        open={editModalOpen}
+        onOpenChange={setEditModalOpen}
+        existingCategories={categories.filter((c) => c !== "todas")}
+        onSubmit={handleEditDish}
+        isEditing={true}
+        editingDish={editingDish}
+      />
     </div>
   );
 }

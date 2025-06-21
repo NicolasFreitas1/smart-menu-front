@@ -57,8 +57,27 @@ export function Menu() {
   const fetchCategories = useCallback(async () => {
     try {
       const result = await getCategories();
-      const names = result.map((cat) => cat.name);
-      setCategories(["Todas", ...names]);
+      const allowedCategories = [
+        "entrada",
+        "saladas", 
+        "Carnes",
+        "grills",
+        "escalopes e pastas",
+        "pastas",
+        "peixe",
+        "bebidas",
+        "porções",
+        "pratos fitness",
+        "Risoto",
+        "sobremesas",
+        
+      ];
+      
+      const filteredCategories = result
+        .map((cat) => cat.name)
+        .filter((name) => allowedCategories.includes(name.toLowerCase()));
+      
+      setCategories(["Todas", ...filteredCategories]);
     } catch (error) {
       console.error("Erro ao buscar categorias:", error);
     }
